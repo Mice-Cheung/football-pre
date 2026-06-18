@@ -1,0 +1,62 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    default-property-inclusion: non_null
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    com.football: DEBUG
+    org.hibernate.SQL: DEBUG
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# ========== 外部数据源配置 ==========
+football:
+  datasource:
+    # 定时同步开关（生产环境开启，开发环境关闭）
+    sync-enabled: false
+    # 竞彩网（中国体育彩票官方）
+    sporttery:
+      base-url: https://webapi.sporttery.cn
+      calc-path: /gateway/jc/football/getMatchCalculatorV1.qry
+      # 每天同步比赛列表的时间范围（天数）
+      day-range: 3
+    # 澳客网（外国机构赔率对比）
+    okooo:
+      base-url: https://www.okooo.com
+      odds-path: /soccer/match/odds/ajax/
+      kelly-path: /soccer/match/kelly/ajax/
+    # 定时任务间隔（毫秒），默认5分钟
+    sync-interval-ms: 300000
+    # ===== 浏览器模拟参数 =====
+    browser:
+      # 是否启用 Session 预热（先访问主页获取 Cookie）
+      session-warmup: true
+      # 请求间最小延迟（毫秒）
+      min-delay-ms: 500
+      # 请求间最大延迟（毫秒）
+      max-delay-ms: 3000
+      # 页面加载等待时间（毫秒）
+      page-load-delay-ms: 2000

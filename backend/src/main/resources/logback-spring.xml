@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- ============================================================
+         FootballPred 后端日志配置
+         用途：运维人员排查问题
+         特性：
+           - 按天滚动，保留 30 天
+           - 单文件最大 50MB，自动压缩旧日志
+           - 控制台彩色输出（开发调试用）
+           - 分离 ERROR 级别日志
+         ============================================================ -->
+
+    <!-- ===== 控制台输出（开发/调试用） ===== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===== 文件输出：所有级别日志 ===== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/football.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 按天滚动 -->
+            <fileNamePattern>logs/football.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- 单文件最大 50MB -->
+            <maxFileSize>50MB</maxFileSize>
+            <!-- 保留 30 天 -->
+            <maxHistory>30</maxHistory>
+            <!-- 总大小上限 2GB -->
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ===== 文件输出：仅 ERROR 级别 ===== -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ===== 应用日志级别 ===== -->
+    <logger name="com.football" level="DEBUG"/>
+
+    <!-- 数据库 SQL 日志（生产环境建议设为 WARN） -->
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+
+    <!-- Spring 框架日志 -->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.springframework.web" level="INFO"/>
+
+    <!-- HTTP 客户端日志 -->
+    <logger name="org.apache.http" level="WARN"/>
+
+    <!-- ===== 根日志 ===== -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+
+</configuration>

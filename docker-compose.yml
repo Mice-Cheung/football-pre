@@ -1,0 +1,102 @@
+# ============================================================
+# FootballPred Docker Compose 编排文件
+# 用途：运维人员一键部署全栈应用
+# 用法：
+#   启动: docker-compose up -d
+#   停止: docker-compose down
+#   查看日志: docker-compose logs -f
+#   重新构建: docker-compose up -d --build
+# ============================================================
+
+version: '3.8'
+
+services:
+  # ========================
+  # PostgreSQL 数据库
+  # ========================
+  postgres:
+    image: postgres:16-alpine
+    container_name: football-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: football
+      POSTGRES_USER: football
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ChangeMe!Please}
+      # 如果数据目录为空，初始化脚本将执行
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # 可选：初始化脚本
+      # - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U football -d football"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - football-net
+
+  # ========================
+  # 后端 Spring Boot
+  # ========================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: football-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Spring 配置
+      SPRING_PROFILES_ACTIVE: prod
+      # 数据库连接（使用 Docker 网络中的服务名）
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/football
+      SPRING_DATASOURCE_USERNAME: football
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-ChangeMe!Please}
+      # JVM 参数
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+      # 时区
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_logs:/app/logs
+    networks:
+      - football-net
+
+  # ========================
+  # 前端 Nginx
+  # ========================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: football-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - football-net
+
+# ========================
+# 数据卷
+# ========================
+volumes:
+  postgres_data:
+    name: football_postgres_data
+  backend_logs:
+    name: football_backend_logs
+
+# ========================
+# 网络
+# ========================
+networks:
+  football-net:
+    name: football_net
+    driver: bridge

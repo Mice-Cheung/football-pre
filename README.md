@@ -35,6 +35,11 @@ football-prediction/
 │       ├── api/         # Axios API 接口层
 │       ├── types/       # TypeScript 类型定义
 │       └── router/      # Vue Router 路由配置
+├── build.sh             # 一键构建脚本 (Linux/macOS)
+├── build.ps1            # 一键构建脚本 (Windows)
+├── deploy.sh            # 一键部署脚本 (Docker)
+├── docker-compose.yml   # Docker 编排文件
+└── DEPLOY.md            # 完整部署文档
 ```
 
 ## 核心功能
@@ -45,7 +50,7 @@ football-prediction/
 4. **凯利指数** — ECharts 柱状图 + 数据表格，多公司对比
 5. **中外赔率对比** — 中国体育彩票 vs Bet365/William Hill/Pinnacle 等外国机构实时对比
 
-## 快速启动
+## 快速启动（开发环境）
 
 ### 前端
 
@@ -68,12 +73,54 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 - API 地址: http://localhost:8080/api
 - Swagger UI: http://localhost:8080/swagger-ui.html
+- 健康检查: http://localhost:8080/api/health
 - H2 控制台: http://localhost:8080/h2-console
 
-### API 接口
+## 快速部署（生产环境）
+
+> **运维人员首选**：Docker 一键部署，无需手动安装环境。
+
+```bash
+# 1. 克隆项目
+git clone <your-repo-url>
+cd football-pre
+
+# 2. 一键部署
+chmod +x deploy.sh
+./deploy.sh
+```
+
+部署完成后访问：
+- 前端页面: http://localhost
+- 健康检查: http://localhost:8080/api/health
+- Swagger 文档: http://localhost:8080/swagger-ui.html
+
+**常用运维命令：**
+```bash
+./deploy.sh status    # 查看服务状态
+./deploy.sh logs      # 查看日志
+./deploy.sh health    # 健康检查
+./deploy.sh restart   # 重启服务
+./deploy.sh stop      # 停止服务
+```
+
+## 研发打包
+
+```bash
+# Linux/macOS
+./build.sh
+
+# Windows
+.\build.ps1
+```
+
+详细部署文档请查看 [DEPLOY.md](./DEPLOY.md)
+
+## API 接口
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
+| `/api/health` | GET | **健康检查** |
 | `/api/matches` | GET | 比赛列表（支持 league/status 筛选 + 分页） |
 | `/api/matches/{id}` | GET | 比赛详情 |
 | `/api/matches/{id}/detail` | GET | 比赛详情（含阵容） |

@@ -1,10 +1,23 @@
 import axios from 'axios'
 
-// 前后端同机部署，直接调用本地后端 8080 端口
-const BASE_URL = 'http://localhost:8080/api'
+/**
+ * API 地址读取优先级：
+ *   1. 运行时配置（public/config.js，部署后可修改）
+ *   2. 构建时注入的环境变量（VITE_API_BASE_URL）
+ *   3. 兜底默认值
+ */
+const getApiBaseUrl = (): string => {
+  if (window.__APP_CONFIG__?.API_BASE_URL) {
+    return window.__APP_CONFIG__.API_BASE_URL
+  }
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  return 'http://localhost:8080/api'
+}
 
 const request = axios.create({
-  baseURL: BASE_URL,
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

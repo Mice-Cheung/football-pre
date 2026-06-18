@@ -22,6 +22,10 @@ const sourceFilter = ref<'ALL' | 'NATIONAL_LOTTERY' | 'INTERNATIONAL'>('ALL')
 const selectedCompany = ref<string | null>(null)
 const showAllAlerts = ref(false)
 
+const setSourceFilter = (key: string) => {
+  sourceFilter.value = key as typeof sourceFilter.value
+}
+
 // 过滤后的公司列表
 const filteredCompanies = computed(() => {
   if (!props.traceability?.companies) return []
@@ -274,10 +278,10 @@ const hasAlerts = computed(() => filteredAlerts.value.length > 0)
               { key: 'INTERNATIONAL', label: '海外机构', icon: Globe }
             ]"
             :key="filter.key"
-            @click="sourceFilter = filter.key"
+            @click="setSourceFilter(filter.key)"
             :class="[
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-              sourceFilter === filter.key
+              sourceFilter === (filter.key as typeof sourceFilter.value)
                 ? 'bg-football-primary text-white shadow-sm'
                 : 'text-text-secondary hover:text-text-primary'
             ]"

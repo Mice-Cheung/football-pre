@@ -14,14 +14,17 @@
   - [2.3 生产环境配置](#23-生产环境配置)
   - [2.4 启动运行](#24-启动运行)
   - [2.5 验证后端](#25-验证后端)
-- [3. 前端部署](#3-前端部署)
-  - [3.1 环境准备](#31-环境准备)
-  - [3.2 构建生产包](#32-构建生产包)
-  - [3.3 Nginx 部署](#33-nginx-部署)
-  - [3.4 验证前端](#34-验证前端)
-- [4. 完整部署检查清单](#4-完整部署检查清单)
-- [5. 常见问题排查](#5-常见问题排查)
-- [6. 运维建议](#6-运维建议)
+- [3. 前端独立部署配置](#3-前端独立部署配置)
+  - [3.1 API 地址配置方式](#31-api-地址配置方式)
+  - [3.2 后端 CORS 配置](#32-后端-cors-配置)
+- [4. 前端部署](#4-前端部署)
+  - [4.1 环境准备](#41-环境准备)
+  - [4.2 构建生产包](#42-构建生产包)
+  - [4.3 Nginx 部署](#43-nginx-部署)
+  - [4.4 验证前端](#44-验证前端)
+- [5. 完整部署检查清单](#5-完整部署检查清单)
+- [6. 常见问题排查](#6-常见问题排查)
+- [7. 运维建议](#7-运维建议)
 - [附录 A：配置文件参考](#附录-a配置文件参考)
 - [附录 B：API 接口清单](#附录-bapi-接口清单)
 
@@ -275,9 +278,62 @@ curl http://localhost:8080/api-docs
 
 ---
 
-## 3. 前端部署
+## 3. 前端独立部署配置
 
-### 3.1 环境准备
+> 前端支持**构建时注入** + **运行时覆盖**双重 API 地址配置，可独立部署到任意静态服务器。
+
+### 3.1 API 地址配置方式
+
+**优先级：运行时配置 > 构建时环境变量 > 硬编码兜底值**
+
+#### 方式一：运行时覆盖（推荐，部署后无需重新构建）
+
+修改 `frontend/public/config.js`（构建后位于 `dist/config.js`）：
+
+```javascript
+window.__APP_CONFIG__ = {
+  API_BASE_URL: 'https://api.example.com/api',  // 改为实际后端地址
+}
+```
+
+修改后刷新浏览器即可生效。
+
+#### 方式二：构建时注入（适合 CI/CD 流水线）
+
+通过环境变量 `VITE_API_BASE_URL` 注入：
+
+```bash
+# 方式 A：创建 .env.production 文件
+echo "VITE_API_BASE_URL=https://api.example.com/api" > frontend/.env.production
+
+# 方式 B：构建时传入
+cd frontend
+VITE_API_BASE_URL=https://api.example.com/api npm run build
+```
+
+#### 默认配置说明
+
+| 文件 | 用途 | 默认值 |
+|------|------|--------|
+| `.env` | 开发环境（`npm run dev`） | `http://localhost:8080/api` |
+| `.env.production` | 生产构建（`npm run build`） | `/api`（相对路径） |
+
+### 3.2 后端 CORS 配置
+
+前端独立部署在不同域名时，后端需允许跨域。当前 `WebConfig.java` 已配置允许所有来源（`*`），**无需修改**。
+
+如需限制为指定域名，修改 `backend/src/main/java/com/football/config/WebConfig.java`：
+
+```java
+// 将 setAllowedOriginPatterns(List.of("*")) 改为：
+config.setAllowedOriginPatterns(List.of("https://your-frontend-domain.com"));
+```
+
+---
+
+## 4. 前端部署
+
+### 4.1 环境准备
 
 #### 安装 Node.js 20+
 
@@ -321,7 +377,7 @@ dist/
 
 ---
 
-### 3.2 部署方式
+### 4.2 部署方式
 
 #### 方式一：Nginx 静态部署（推荐）
 
@@ -423,7 +479,7 @@ java -jar target/football-backend-1.0.0.jar -Dspring.profiles.active=prod
 
 ---
 
-### 3.3 防火墙配置
+### 4.3 防火墙配置
 
 ```bash
 # 开放 HTTP 端口
@@ -437,7 +493,7 @@ sudo ufw allow 8080/tcp
 
 ---
 
-### 3.4 验证前端
+### 4.4 验证前端
 
 浏览器访问 `http://your-server-ip` 或 `http://your-domain.com`，应能看到：
 
@@ -448,7 +504,7 @@ sudo ufw allow 8080/tcp
 
 ---
 
-## 4. 完整部署检查清单
+## 5. 完整部署检查清单
 
 | # | 检查项 | 命令/操作 | 预期结果 |
 |---|--------|-----------|----------|
@@ -469,7 +525,7 @@ sudo ufw allow 8080/tcp
 
 ---
 
-## 5. 常见问题排查
+## 6. 常见问题排查
 
 ### Q1：后端启动报错 "Failed to configure a DataSource"
 
@@ -560,7 +616,7 @@ host    all    all    0.0.0.0/0    md5   # 或指定 IP 段
 
 ---
 
-## 6. 运维建议
+## 7. 运维建议
 
 ### 6.1 日志管理
 
@@ -693,17 +749,29 @@ spring:
 // frontend/src/api/request.ts
 import axios from 'axios'
 
-// 前后端同机部署，直接调用本地后端 8080 端口
-const BASE_URL = 'http://localhost:8080/api'
+/**
+ * API 地址读取优先级：
+ *   1. 运行时配置（public/config.js，部署后可修改）
+ *   2. 构建时注入的环境变量（VITE_API_BASE_URL）
+ *   3. 兜底默认值
+ */
+const getApiBaseUrl = (): string => {
+  if (window.__APP_CONFIG__?.API_BASE_URL) {
+    return window.__APP_CONFIG__.API_BASE_URL
+  }
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  return 'http://localhost:8080/api'
+}
 
 const request = axios.create({
-  baseURL: BASE_URL,
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
 })
 ```
 
-> **说明**：前后端同机部署，前端通过绝对路径 `http://localhost:8080/api` 直接请求后端，无需 Nginx 反向代理。  
-> 后端 `WebConfig` 已配置 CORS 允许跨域。
+> **说明**：前端支持构建时注入 + 运行时覆盖双重配置。详见[第 3 章：前端独立部署配置](#3-前端独立部署配置)。
 
 ---
 

@@ -588,3 +588,62 @@ VITE_API_BASE_URL=https://api.example.com/api npm run build
 > **文档版本**: 2.0  
 > **最后更新**: 2026-06-18  
 > **新增内容**: Docker 部署、构建脚本、健康检查端点、日志配置、排查速查表
+
+---
+
+## 附录 C：版本更新记录
+
+### v2.0 (2026-06-18) — 优化打包和部署流程
+
+#### 新增脚本文件（4个）
+
+| 文件 | 用途 | 使用场景 |
+|------|------|----------|
+| `build.sh` | 一键构建脚本 (Linux/macOS) | 研发打包 |
+| `build.ps1` | 一键构建脚本 (Windows) | 研发打包 |
+| `deploy.sh` | 一键部署脚本 | 运维部署/状态/日志/健康检查 |
+| `frontend/nginx.conf` | 前端 Nginx 配置 | 反向代理+缓存 |
+
+#### 新增 Docker 支持（3个）
+
+| 文件 | 用途 |
+|------|------|
+| `docker-compose.yml` | Docker 编排文件，一键启动全栈 (DB+后端+前端) |
+| `frontend/Dockerfile` | 前端镜像 (多阶段构建: Node.js编译 → Nginx运行) |
+| `backend/Dockerfile` | 后端镜像 (多阶段构建: Maven编译 → JRE运行) |
+
+#### 新增后端功能（2个）
+
+| 文件 | 用途 |
+|------|------|
+| `HealthController.java` | 健康检查端点 `/api/health` 和就绪检查 `/api/ready` |
+| `logback-spring.xml` | 按天滚动日志配置，分离 ERROR 日志，保留30-60天 |
+
+#### 文档更新
+
+| 文件 | 变更内容 |
+|------|----------|
+| `DEPLOY.md` | 新增 Docker 部署章节、研发构建指引、运维排查速查表、监控检查点 |
+| `README.md` | 补充快速部署命令、研发打包说明、健康检查端点 |
+
+#### 研发打包流程
+
+```bash
+# Linux/macOS
+./build.sh
+
+# Windows
+.\build.ps1
+```
+
+#### 运维部署流程
+
+```bash
+chmod +x deploy.sh
+./deploy.sh              # 一键部署
+./deploy.sh status       # 查看状态
+./deploy.sh logs         # 查看日志
+./deploy.sh health       # 健康检查
+./deploy.sh restart      # 重启服务
+./deploy.sh stop         # 停止服务
+```
